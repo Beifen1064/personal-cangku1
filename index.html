@@ -5,210 +5,738 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 智能助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ========== CSS 变量 ========== */
         :root {
-            --bg: #202020;
-            --bg2: #272727;
-            --bg3: #323232;
-            --bg4: #3a3a3a;
-            --ink: #ffffff;
-            --muted: #a0a0a0;
-            --rule: #3c3c3c;
-            --accent: #60cdff;
-            --accent2: #4db8eb;
-            --hover: rgba(255,255,255,0.06);
-            --active: rgba(96,205,255,0.12);
+            --layer-background: #f3f3f3;
+            --layer-surface: rgba(255, 255, 255, 0.75);
+            --layer-card: rgba(255, 255, 255, 0.65);
+            --layer-card-hover: rgba(249, 249, 249, 0.75);
+            --text-primary: #1a1a1a;
+            --text-secondary: #5c5c5c;
+            --text-tertiary: #868686;
+            --accent: #005fb8;
+            --accent-light: #e6f2ff;
+            --accent-hover: #0067c0;
+            --border-subtle: #e5e5e5;
+            --border-default: #d1d1d1;
+            --scrollbar-thumb: rgba(0,0,0,0.25);
+            --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.04), 0 0 1px rgba(0, 0, 0, 0.08);
+            --shadow-card-hover: 0 4px 8px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+            --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+            --radius-small: 4px;
+            --radius-medium: 8px;
+            --radius-large: 12px;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 56px;
         }
+        [data-theme="dark"] {
+            --layer-background: #202020;
+            --layer-surface: rgba(45, 45, 45, 0.75);
+            --layer-card: rgba(35, 35, 35, 0.65);
+            --layer-card-hover: rgba(45, 45, 45, 0.75);
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-tertiary: #999999;
+            --accent: #4cc2ff;
+            --accent-light: rgba(76, 194, 255, 0.15);
+            --accent-hover: #5cc8ff;
+            --border-subtle: #3d3d3d;
+            --border-default: #525252;
+            --scrollbar-thumb: rgba(255,255,255,0.3);
+            --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.3);
+            --shadow-card-hover: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.4);
+            --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ========== 基础 ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
-        body { display: flex; flex-direction: column; }
-
-        /* 输入栏 */
-        .input-bar {
-            display: flex; align-items: center; gap: 10px;
-            padding: 12px 20px;
-            background: var(--bg2);
-            border-bottom: 1px solid var(--rule);
-            flex-shrink: 0;
+        body {
+            font-family: 'Noto Serif SC', Georgia, serif;
+            background-color: var(--layer-background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
         }
-        .input-bar label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; font-weight: 500; }
-        .input-bar input {
-            flex: 1; padding: 8px 14px; background: var(--bg3);
-            border: 1px solid var(--rule); border-radius: 4px;
-            font-size: 0.85rem; color: var(--ink); outline: none;
-            font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at 20% 20%, rgba(0, 95, 184, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(0, 95, 184, 0.05) 0%, transparent 50%);
+            pointer-events: none; z-index: 0;
         }
-        .input-bar input:focus { border-color: var(--accent); }
-        .input-bar input::placeholder { color: var(--muted); }
-        .input-bar button {
-            padding: 8px 20px; background: var(--accent); color: #000;
-            border: none; border-radius: 4px; font-size: 0.85rem;
-            cursor: pointer; white-space: nowrap; font-weight: 600;
-            transition: background 0.15s;
-        }
-        .input-bar button:hover { background: var(--accent2); }
-        .input-bar button.reset { background: var(--bg3); color: var(--ink); font-weight: 500; }
-        .input-bar button.reset:hover { background: var(--bg4); }
 
-        /* 主区域 */
-        .main-area { display: flex; flex: 1; overflow: hidden; }
-
-        /* 侧边栏 */
+        /* ========== 布局 ========== */
+        .app-container { display: flex; height: 100vh; position: relative; z-index: 1; }
         .sidebar {
-            width: 280px;
-            background: var(--bg2);
-            border-right: 1px solid var(--rule);
+            width: var(--sidebar-width);
+            background: var(--layer-surface);
+            border-right: 1px solid var(--border-subtle);
             display: flex; flex-direction: column;
             flex-shrink: 0;
-            transition: margin-left 0.25s ease;
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+            z-index: 10;
         }
-        .sidebar.collapsed { margin-left: -280px; }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ========== 侧边栏头部 ========== */
         .sidebar-header {
+            padding: 16px 14px 10px;
+            border-bottom: 1px solid var(--border-subtle);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 20px;
         }
-        .sidebar-header h3 { font-size: 0.9rem; color: var(--ink); font-weight: 600; letter-spacing: 0.02em; }
-        .sidebar-header button {
-            background: none; border: none; cursor: pointer;
-            color: var(--muted); padding: 4px; font-size: 1rem; line-height: 1;
-            border-radius: 4px; transition: all 0.15s;
+        .sidebar-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem; font-weight: 600;
+            color: var(--text-primary); white-space: nowrap;
+            transition: opacity 0.2s ease;
         }
-        .sidebar-header button:hover { color: var(--ink); background: var(--hover); }
+        .sidebar.collapsed .sidebar-title { opacity: 0; width: 0; overflow: hidden; }
+        .sidebar-toggle {
+            width: 28px; height: 28px;
+            border: none; background: transparent;
+            border-radius: var(--radius-medium);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease;
+            color: var(--text-secondary); flex-shrink: 0;
+        }
+        .sidebar-toggle:hover { background: var(--layer-background); color: var(--text-primary); }
+        .sidebar-toggle svg { width: 18px; height: 18px; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+
+        /* ========== 新建对话按钮 ========== */
         .new-chat-btn {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin: 0 16px 12px; padding: 10px;
-            background: var(--bg3); border: 1px solid var(--rule);
-            border-radius: 4px; color: var(--ink);
-            font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
-            font-weight: 500;
+            display: flex; align-items: center; gap: 10px;
+            margin: 10px 12px 6px; padding: 9px 14px;
+            background: var(--accent); color: white;
+            border: none; border-radius: var(--radius-medium);
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; transition: all 0.15s ease;
+            white-space: nowrap;
         }
-        .new-chat-btn:hover { background: var(--bg4); border-color: var(--accent); }
-        .new-chat-btn svg { color: var(--accent); }
-        .chat-list { flex: 1; overflow-y: auto; padding: 4px 12px; }
-        .chat-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 14px; border-radius: 4px;
-            cursor: pointer; transition: all 0.12s;
-            margin-bottom: 2px;
-        }
-        .chat-item:hover { background: var(--hover); }
-        .chat-item.active { background: var(--active); }
-        .chat-item.active .chat-item-title { color: var(--accent); }
-        .chat-item-content { flex: 1; min-width: 0; }
-        .chat-item-title { font-size: 0.85rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
-        .chat-item-time { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
-        .chat-item-delete {
-            background: none; border: none; cursor: pointer;
-            color: var(--muted); padding: 4px; font-size: 0.8rem;
-            line-height: 1; opacity: 0; transition: all 0.12s;
-            border-radius: 4px;
-        }
-        .chat-item:hover .chat-item-delete { opacity: 1; }
-        .chat-item-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
-        .sidebar-footer {
-            padding: 12px 20px;
-            font-size: 0.75rem; color: var(--muted); text-align: center;
-        }
+        .new-chat-btn:hover { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(0, 95, 184, 0.3); }
+        .new-chat-btn:active { transform: scale(0.98); }
+        .new-chat-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .sidebar.collapsed .new-chat-btn { justify-content: center; padding: 9px; }
+        .sidebar.collapsed .new-chat-btn span { display: none; }
 
-        /* 切换按钮 */
-        .toggle-sidebar {
-            position: absolute; left: 280px; top: 50%;
+        .search-wrap { position: relative; padding: 0 12px; margin-bottom: 4px; }
+        .search-input {
+            width: 100%; padding: 7px 10px 7px 32px;
+            border: 1px solid var(--border-subtle);
+            background: var(--layer-background);
+            border-radius: var(--radius-small);
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.8rem; color: var(--text-primary);
+            transition: all 0.15s ease; outline: none;
+        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+        .search-input::placeholder { color: var(--text-tertiary); }
+        .search-wrap-icon {
+            position: absolute; left: 20px; top: 50%;
             transform: translateY(-50%);
-            background: var(--bg2); border: 1px solid var(--rule);
-            border-left: none; border-radius: 0 4px 4px 0;
-            padding: 10px 4px; cursor: pointer;
-            color: var(--muted); font-size: 0.75rem; z-index: 10;
-            transition: left 0.25s ease; line-height: 1;
+            width: 14px; height: 14px;
+            color: var(--text-tertiary); pointer-events: none;
         }
-        .toggle-sidebar:hover { color: var(--accent); background: var(--bg3); }
-        .toggle-sidebar.shifted { left: 0; }
 
-        /* 内容区 */
-        .content-area {
-            flex: 1; position: relative;
-            display: flex; flex-direction: column;
-            background: var(--bg);
+        /* ========== 分组标签 ========== */
+        .chat-group-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px 4px;
+            user-select: none;
         }
-        .placeholder {
-            display: flex; flex-direction: column;
+        .chat-group-label {
+            font-size: 0.7rem; font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .chat-group-count {
+            font-size: 0.65rem; color: var(--text-tertiary);
+            background: var(--layer-background);
+            padding: 1px 6px; border-radius: 10px;
+        }
+        .chat-group-toggle {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-tertiary); padding: 2px 4px;
+            font-size: 0.6rem; line-height: 1;
+            border-radius: var(--radius-small);
+            transition: all 0.15s ease;
+        }
+        .chat-group-toggle:hover { color: var(--text-primary); background: var(--layer-background); }
+        .sidebar.collapsed .chat-group-header { display: none; }
+
+        /* ========== 批量选择复选框 ========== */
+        .batch-checkbox {
+            width: 16px; height: 16px;
+            border: 1.5px solid var(--border-default);
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-right: 6px;
+            transition: all 0.15s ease;
+            background: var(--layer-card);
+        }
+        .batch-checkbox:hover { border-color: var(--accent); }
+        .batch-checkbox.checked {
+            background: var(--accent); border-color: var(--accent);
+        }
+        .batch-checkbox.checked svg { width: 12px; height: 12px; color: white; }
+        .batch-checkbox.unchecked svg { display: none; }
+        .chat-item.batch-mode .chat-item-icon { display: none; }
+        .chat-item.batch-mode .chat-item-actions { display: none !important; }
+
+        /* ========== 批量操作栏 ========== */
+        .batch-bar {
+            display: none; align-items: center; justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--accent-light);
+            border-bottom: 1px solid var(--border-subtle);
+            animation: slideDown 0.2s ease;
+        }
+        .batch-bar.show { display: flex; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .batch-bar-left { display: flex; align-items: center; gap: 8px; }
+        .batch-bar-right { display: flex; align-items: center; gap: 6px; }
+        .batch-bar-text { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+        .batch-bar-btn {
+            padding: 5px 12px; border: 1px solid var(--border-default);
+            background: var(--layer-card); color: var(--text-primary);
+            border-radius: var(--radius-small); font-size: 0.78rem;
+            cursor: pointer; transition: all 0.15s ease;
+            font-family: 'Noto Serif SC', serif; font-weight: 500;
+        }
+        .batch-bar-btn:hover { background: var(--layer-background); }
+        .batch-bar-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+        .batch-bar-btn.primary:hover { background: var(--accent-hover); }
+        .batch-bar-btn.danger { color: #d13438; border-color: #d13438; }
+        .batch-bar-btn.danger:hover { background: #fde7e9; }
+
+        /* ========== 聊天列表 ========== */
+        .chat-list {
+            flex: 1; overflow-y: auto;
+            padding: 0 6px 6px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-default) transparent;
+        }
+        .chat-list::-webkit-scrollbar { width: 4px; }
+        .chat-list::-webkit-scrollbar-track { background: transparent; }
+        .chat-list::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+        .chat-group-items { overflow: hidden; transition: max-height 0.25s ease; }
+        .chat-group-items.collapsed { max-height: 0 !important; }
+        .chat-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; margin: 1px 0;
+            cursor: pointer; transition: all 0.15s ease;
+            border-radius: var(--radius-medium);
+            position: relative;
+        }
+        .chat-item:hover { background: var(--layer-background); }
+        .chat-item.active { background: var(--accent-light); }
+        .chat-item.active .chat-item-title { color: var(--accent); font-weight: 600; }
+        .chat-item-icon {
+            width: 28px; height: 28px;
+            border-radius: var(--radius-small);
+            background: var(--layer-card);
+            border: 1px solid var(--border-subtle);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; color: var(--text-secondary);
+        }
+        .chat-item.active .chat-item-icon { color: var(--accent); border-color: var(--accent); background: rgba(0,95,184,0.08); }
+        .chat-item-icon svg { width: 14px; height: 14px; }
+        .chat-item-content { flex: 1; min-width: 0; overflow: hidden; }
+        .chat-item-title {
+            font-size: 0.82rem; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .chat-item-time {
+            font-size: 0.65rem; color: var(--text-tertiary);
+            margin-top: 1px;
+        }
+        .chat-item-actions {
+            display: flex; gap: 1px;
+            opacity: 0; transition: opacity 0.15s ease;
+        }
+        .chat-item:hover .chat-item-actions { opacity: 1; }
+        .chat-item-action {
+            width: 24px; height: 24px;
+            border: none; background: transparent;
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease;
+            color: var(--text-tertiary);
+        }
+        .chat-item-action:hover { background: var(--layer-card); color: var(--text-primary); }
+        .chat-item-action.delete:hover { color: #d13438; background: #fde7e9; }
+        .chat-item-action svg { width: 13px; height: 13px; }
+        .sidebar.collapsed .chat-item-content,
+        .sidebar.collapsed .chat-item-actions { display: none; }
+        .sidebar.collapsed .chat-item { justify-content: center; padding: 8px; }
+
+        /* ========== 侧边栏底部 ========== */
+        .sidebar-footer {
+            padding: 8px 12px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-footer span { font-size: 0.68rem; color: var(--text-tertiary); white-space: nowrap; }
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar-footer-actions { display: flex; gap: 4px; }
+        .footer-btn {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-tertiary); font-size: 0.68rem;
+            padding: 3px 8px; border-radius: var(--radius-small);
+            transition: all 0.12s ease;
+            font-family: 'Noto Serif SC', serif;
+            white-space: nowrap;
+        }
+        .footer-btn:hover { color: var(--text-primary); background: var(--layer-background); }
+        .footer-btn.danger:hover { color: #d13438; background: rgba(209,52,56,0.08); }
+        .sidebar.collapsed .footer-btn { display: none; }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 24px;
+            background: var(--layer-card);
+            border-bottom: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            flex-shrink: 0; position: relative;
+        }
+        .top-bar::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+        }
+        .top-bar-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
+        .top-bar-input-wrap { flex: 1; position: relative; }
+        .top-bar-input {
+            width: 100%; padding: 9px 12px 9px 34px;
+            border: 1px solid var(--border-default);
+            background: var(--layer-background);
+            border-radius: var(--radius-medium);
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.88rem; color: var(--text-primary);
+            transition: all 0.15s ease;
+        }
+        .top-bar-input:focus { outline: none; border-color: var(--accent); background: var(--layer-card); box-shadow: 0 0 0 3px var(--accent-light); }
+        .top-bar-input::placeholder { color: var(--text-tertiary); }
+        .top-bar-input-icon {
+            position: absolute; left: 11px; top: 50%;
+            transform: translateY(-50%);
+            width: 16px; height: 16px;
+            color: var(--text-tertiary); pointer-events: none;
+        }
+        .top-bar-btn {
+            padding: 9px 18px; border: none;
+            background: var(--accent); color: white;
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 500; font-size: 0.85rem;
+            cursor: pointer; transition: all 0.15s ease;
+            border-radius: var(--radius-medium); white-space: nowrap;
+        }
+        .top-bar-btn:hover { background: var(--accent-hover); }
+        .top-bar-btn:active { transform: scale(0.98); }
+        .top-bar-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
+        .top-bar-btn.secondary:hover { background: var(--layer-background); color: var(--text-primary); }
+        .theme-toggle {
+            width: 34px; height: 34px;
+            border: 1px solid var(--border-default);
+            background: var(--layer-card);
+            border-radius: var(--radius-medium);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease;
+            color: var(--text-secondary); flex-shrink: 0;
+        }
+        .theme-toggle:hover { background: var(--layer-background); color: var(--text-primary); }
+        .theme-toggle svg { width: 17px; height: 17px; }
+
+        /* ========== 内容区 ========== */
+        .content-area { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+        .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--text-tertiary); gap: 16px; }
+        .placeholder-card {
+            background: var(--layer-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-large); padding: 48px 56px;
+            box-shadow: var(--shadow-card); text-align: center;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .placeholder-card svg { width: 56px; height: 56px; color: var(--text-tertiary); opacity: 0.4; margin-bottom: 16px; }
+        .placeholder-card h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+        .placeholder-card p { font-size: 0.9rem; color: var(--text-tertiary); }
+        iframe { flex: 1; width: 100%; border: none; display: none; background: var(--layer-background); }
+
+        /* ========== Toast 提示 ========== */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--layer-surface); color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            padding: 10px 24px; border-radius: var(--radius-medium);
+            font-size: 0.88rem; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s ease;
+            pointer-events: none; box-shadow: var(--shadow-flyout);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            font-family: 'Noto Serif SC', serif;
+        }
+        .toast.show { opacity: 1; }
+
+        /* ========== 确认弹窗 ========== */
+        .confirm-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 999; display: none;
             align-items: center; justify-content: center;
-            flex: 1; color: var(--muted);
         }
-        .placeholder svg { margin-bottom: 16px; }
-        .placeholder p { font-size: 0.95rem; }
-        iframe { flex: 1; width: 100%; border: none; display: none; }
+        .confirm-overlay.show { display: flex; }
+        .confirm-box {
+            background: var(--layer-surface); border: 1px solid var(--border-default);
+            border-radius: var(--radius-large); width: 100%; max-width: 400px;
+            box-shadow: var(--shadow-flyout); overflow: hidden;
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .confirm-overlay.show .confirm-box { transform: scale(1); }
+        .confirm-header { padding: 20px 24px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); }
+        .confirm-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+        .confirm-close { width: 30px; height: 30px; border: none; background: transparent; border-radius: var(--radius-medium); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; color: var(--text-secondary); }
+        .confirm-close:hover { background: var(--layer-background); color: var(--text-primary); }
+        .confirm-close svg { width: 16px; height: 16px; }
+        .confirm-body { padding: 16px 24px; }
+        .confirm-body p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+        .confirm-footer { padding: 14px 24px 20px; display: flex; gap: 10px; justify-content: flex-end; }
+        .confirm-footer button { padding: 9px 18px; border: none; border-radius: var(--radius-medium); font-size: 0.85rem; cursor: pointer; font-weight: 500; font-family: 'Noto Serif SC', serif; transition: all 0.15s ease; }
+        .confirm-footer .btn-cancel { background: var(--layer-background); color: var(--text-primary); border: 1px solid var(--border-default); }
+        .confirm-footer .btn-cancel:hover { background: var(--layer-card); }
+        .confirm-footer .btn-danger { background: #d13438; color: white; }
+        .confirm-footer .btn-danger:hover { background: #b52d30; }
+
+        /* ========== 重命名输入框 ========== */
+        .rename-input {
+            width: 100%; padding: 3px 6px;
+            border: 1px solid var(--accent);
+            background: var(--layer-background);
+            border-radius: var(--radius-small);
+            color: var(--text-primary);
+            font-size: 0.82rem; font-family: inherit; outline: none;
+        }
+
+        /* ========== 空状态 ========== */
+        .empty-state {
+            padding: 28px 14px; text-align: center;
+            color: var(--text-tertiary); font-size: 0.78rem;
+        }
+        .empty-state svg { width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.3; }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 768px) {
+            .sidebar { position: absolute; transform: translateX(-100%); height: 100%; }
+            .sidebar.open { transform: translateX(0); }
+            .top-bar { padding: 12px 16px; }
+            .top-bar-label { display: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="input-bar" id="inputBar">
-        <label>嵌入地址：</label>
-        <input type="text" id="urlInput" value="http://127.0.0.1/chatbot/LMpGbkbWfMXlTATt" placeholder="输入 Dify Chatflow 嵌入地址">
-        <button onclick="loadUrl()">加载</button>
-        <button class="reset" onclick="resetUrl()">重置</button>
-    </div>
-
-    <div class="main-area" id="mainArea">
+    <div class="app-container">
+        <!-- 侧边栏 -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h3>聊天历史</h3>
-                <button onclick="toggleSidebar()" title="收起侧边栏">◀</button>
+                <span class="sidebar-title">聊天历史</span>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
             </div>
-            <div class="new-chat-btn" onclick="newChat()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                新建对话
+            <!-- 批量操作栏 -->
+            <div class="batch-bar" id="batchBar">
+                <div class="batch-bar-left">
+                    <div class="batch-checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <span class="batch-bar-text" id="batchCountText">已选 0 项</span>
+                </div>
+                <div class="batch-bar-right">
+                    <button class="batch-bar-btn" onclick="cancelBatchMode()">取消</button>
+                    <button class="batch-bar-btn danger" onclick="confirmBatchDelete()">删除</button>
+                </div>
+            </div>
+            <button class="new-chat-btn" onclick="newChat()" title="新建对话">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span>新建对话</span>
+            </button>
+            <div class="search-wrap">
+                <svg class="search-wrap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索对话..." oninput="renderChatList()">
             </div>
             <div class="chat-list" id="chatList"></div>
-            <div class="sidebar-footer" id="chatCount">暂无对话记录</div>
+            <div class="sidebar-footer">
+                <span id="chatCount">暂无对话</span>
+                <div class="sidebar-footer-actions">
+                    <button class="footer-btn" onclick="expandAllGroups()">展开</button>
+                    <button class="footer-btn" onclick="collapseAllGroups()">折叠</button>
+                    <button class="footer-btn" onclick="enterBatchMode()">批量</button>
+                    <button class="footer-btn danger" onclick="confirmClearAll()">清空</button>
+                </div>
+            </div>
         </aside>
 
-        <button class="toggle-sidebar" id="toggleBtn" onclick="toggleSidebar()">▶</button>
-
-        <div class="content-area">
-            <div class="placeholder" id="placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5">
-                    <rect x="2" y="3" width="20" height="18" rx="2"/>
-                    <path d="M8 10h8M8 14h5"/>
-                </svg>
-                <p>请输入 Dify Chatflow 嵌入地址</p>
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="top-bar">
+                <span class="top-bar-label">嵌入地址</span>
+                <div class="top-bar-input-wrap">
+                    <svg class="top-bar-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="top-bar-input" id="urlInput" value="http://10.18.163.126/chatbot/LMpGbkbWfMXlTATt" placeholder="输入 Dify Chatflow 嵌入地址...">
+                </div>
+                <button class="top-bar-btn" onclick="loadUrl()">加载</button>
+                <button class="top-bar-btn secondary" onclick="resetUrl()">重置</button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="切换深色模式">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
             </div>
-            <iframe id="chatFrame" allow="microphone"></iframe>
+            <div class="content-area">
+                <div class="placeholder" id="placeholder">
+                    <div class="placeholder-card">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+                        <h3>AI 智能助手</h3>
+                        <p>请输入 Dify Chatflow 嵌入地址开始对话</p>
+                    </div>
+                </div>
+                <iframe id="chatFrame" allow="microphone"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <div class="confirm-header">
+                <span class="confirm-title" id="confirmTitle">确认操作</span>
+                <button class="confirm-close" onclick="closeConfirm()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="confirm-body"><p id="confirmMsg">确定要执行此操作吗？</p></div>
+            <div class="confirm-footer">
+                <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+                <button class="btn-danger" id="confirmBtn">确定</button>
+            </div>
         </div>
     </div>
 
     <script>
         var chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
         var currentChatId = null;
+        var loadedUrl = '';
+        var toastTimer = null;
+        var collapsedGroups = JSON.parse(localStorage.getItem('collapsedGroups') || '{}');
+        var batchMode = false;
+        var selectedChats = new Set();
 
-        function renderChatList() {
-            var list = document.getElementById('chatList');
-            var count = document.getElementById('chatCount');
-            if (chatHistory.length === 0) {
-                list.innerHTML = '';
-                count.textContent = '暂无对话记录';
-                return;
-            }
-            count.textContent = '共 ' + chatHistory.length + ' 条对话';
-            list.innerHTML = chatHistory.map(function(chat) {
-                return '<div class="chat-item' + (chat.id === currentChatId ? ' active' : '') + '" onclick="switchChat(\'' + chat.id + '\')">' +
-                    '<div class="chat-item-content">' +
-                        '<div class="chat-item-title">' + escapeHtml(chat.title) + '</div>' +
-                        '<div class="chat-item-time">' + chat.time + '</div>' +
-                    '</div>' +
-                    '<button class="chat-item-delete" onclick="event.stopPropagation();deleteChat(\'' + chat.id + '\')" title="删除">✕</button>' +
-                '</div>';
-            }).join('');
+        // ===== 主题切换 =====
+        function toggleTheme() {
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme');
+            var next = current === 'dark' ? null : 'dark';
+            if (next) html.setAttribute('data-theme', next);
+            else html.removeAttribute('data-theme');
+            localStorage.setItem('theme', next || 'light');
+        }
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+
+        // ===== Toast =====
+        function showToast(msg, duration) {
+            duration = duration || 2000;
+            var el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function() { el.classList.remove('show'); }, duration);
         }
 
+        // ===== 确认弹窗 =====
+        var confirmCallback = null;
+        function showConfirm(title, msg, onConfirm) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMsg').textContent = msg;
+            confirmCallback = onConfirm;
+            document.getElementById('confirmBtn').onclick = function() {
+                var cb = confirmCallback;
+                closeConfirm();
+                if (cb) cb();
+            };
+            document.getElementById('confirmOverlay').classList.add('show');
+        }
+        function closeConfirm() {
+            document.getElementById('confirmOverlay').classList.remove('show');
+            confirmCallback = null;
+        }
+
+        // ===== HTML 转义 =====
         function escapeHtml(text) {
             var div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        function saveHistory() {
-            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        // ===== 持久化 =====
+        function saveHistory() { localStorage.setItem('chatHistory', JSON.stringify(chatHistory)); }
+        function saveCollapsedGroups() { localStorage.setItem('collapsedGroups', JSON.stringify(collapsedGroups)); }
+
+        // ===== 日期分组工具 =====
+        function getDateGroup(timeStr) {
+            if (!timeStr) return '未知日期';
+            var parts = timeStr.split(' ')[0].split('-');
+            var date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var yesterday = new Date(today.getTime() - 86400000);
+            var weekAgo = new Date(today.getTime() - 7 * 86400000);
+
+            if (date.getTime() >= today.getTime()) return '今天';
+            if (date.getTime() >= yesterday.getTime()) return '昨天';
+            if (date.getTime() >= weekAgo.getTime()) return '最近7天';
+            if (date.getFullYear() === now.getFullYear()) {
+                return date.getFullYear() + '年' + (date.getMonth() + 1) + '月';
+            }
+            return date.getFullYear() + '年';
         }
 
+        function groupSortKey(groupName) {
+            var order = { '今天': 0, '昨天': 1, '最近7天': 2 };
+            if (order[groupName] !== undefined) return order[groupName];
+            // 解析年月
+            var m = groupName.match(/(\d{4})年(\d{1,2})月/);
+            if (m) return 100 - parseInt(m[1]) * 100 + (100 - parseInt(m[2]));
+            var y = groupName.match(/(\d{4})年/);
+            if (y) return 10000 - parseInt(y[1]);
+            return 999;
+        }
+
+        // ===== 渲染侧边栏列表（分组） =====
+        function renderChatList() {
+            var list = document.getElementById('chatList');
+            var count = document.getElementById('chatCount');
+            var keyword = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+            var filtered = chatHistory;
+            if (keyword) {
+                filtered = chatHistory.filter(function(c) {
+                    return c.title.toLowerCase().indexOf(keyword) !== -1;
+                });
+            }
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                    '<div>' + (keyword ? '未找到匹配的对话' : '暂无对话记录') + '</div></div>';
+                count.textContent = keyword ? '找到 0 条' : '暂无对话';
+                return;
+            }
+
+            // 分组
+            var groups = {};
+            filtered.forEach(function(chat) {
+                var group = getDateGroup(chat.time);
+                if (!groups[group]) groups[group] = [];
+                groups[group].push(chat);
+            });
+
+            var sortedKeys = Object.keys(groups).sort(function(a, b) {
+                return groupSortKey(a) - groupSortKey(b);
+            });
+
+            count.textContent = '共 ' + filtered.length + ' 条对话';
+
+            var html = '';
+            sortedKeys.forEach(function(groupName) {
+                var items = groups[groupName];
+                var isCollapsed = !!collapsedGroups[groupName];
+                html += '<div class="chat-group-header">' +
+                    '<span class="chat-group-label">' + groupName + '</span>' +
+                    '<div style="display:flex;align-items:center;gap:6px;">' +
+                        '<span class="chat-group-count">' + items.length + '</span>' +
+                        '<button class="chat-group-toggle" onclick="toggleGroup(\'' + escapeHtml(groupName) + '\')" title="' + (isCollapsed ? '展开' : '折叠') + '">' +
+                            (isCollapsed ? '&#9654;' : '&#9660;') +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+                html += '<div class="chat-group-items' + (isCollapsed ? ' collapsed' : '') + '" data-group="' + escapeHtml(groupName) + '">';
+                items.forEach(function(chat) {
+                    var isActive = chat.id === currentChatId;
+                    var isSelected = selectedChats.has(chat.id);
+                    html += '<div class="chat-item' + (isActive ? ' active' : '') + (batchMode ? ' batch-mode' : '') + '" data-id="' + chat.id + '">';
+                    if (batchMode) {
+                        html += '<div class="batch-checkbox' + (isSelected ? ' checked' : ' unchecked') + '" onclick="event.stopPropagation();toggleSelectChat(\'' + chat.id + '\')">' +
+                            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                        '</div>';
+                    } else {
+                        html += '<div class="chat-item-icon">' +
+                            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                        '</div>';
+                    }
+                    html += '<div class="chat-item-content" ondblclick="' + (batchMode ? '' : 'startRename(\'' + chat.id + '\')') + '" onclick="' + (batchMode ? '' : 'switchChat(\'' + chat.id + '\')') + '">' +
+                            '<div class="chat-item-title">' + escapeHtml(chat.title) + '</div>' +
+                            '<div class="chat-item-time">' + chat.time + '</div>' +
+                        '</div>';
+                    if (!batchMode) {
+                        html += '<div class="chat-item-actions">' +
+                            '<button class="chat-item-action" onclick="event.stopPropagation();startRename(\'' + chat.id + '\')" title="重命名">' +
+                                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+                            '</button>' +
+                            '<button class="chat-item-action delete" onclick="event.stopPropagation();deleteChat(\'' + chat.id + '\')" title="删除">' +
+                                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                            '</button>' +
+                        '</div>';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+
+            list.innerHTML = html;
+        }
+
+        // ===== 分组折叠/展开 =====
+        function toggleGroup(groupName) {
+            collapsedGroups[groupName] = !collapsedGroups[groupName];
+            saveCollapsedGroups();
+            renderChatList();
+        }
+        function expandAllGroups() {
+            collapsedGroups = {};
+            saveCollapsedGroups();
+            renderChatList();
+            showToast('已展开全部分组');
+        }
+        function collapseAllGroups() {
+            var allGroups = {};
+            chatHistory.forEach(function(c) {
+                allGroups[getDateGroup(c.time)] = true;
+            });
+            collapsedGroups = allGroups;
+            saveCollapsedGroups();
+            renderChatList();
+            showToast('已折叠全部分组');
+        }
+
+        // ===== 新建对话 =====
         function newChat() {
             var now = new Date();
             var timeStr = now.getFullYear() + '-' +
@@ -218,58 +746,226 @@
                 String(now.getMinutes()).padStart(2, '0');
             var chat = {
                 id: 'chat_' + Date.now(),
-                title: '新对话 ' + (chatHistory.length + 1),
-                time: timeStr
+                title: '对话 ' + (chatHistory.length + 1),
+                time: timeStr,
+                url: loadedUrl
             };
             chatHistory.unshift(chat);
             currentChatId = chat.id;
             saveHistory();
+            // 确保今天分组展开
+            delete collapsedGroups['今天'];
+            saveCollapsedGroups();
             renderChatList();
+
+            var frame = document.getElementById('chatFrame');
+            if (loadedUrl) {
+                frame.src = '';
+                setTimeout(function() { frame.src = loadedUrl; }, 100);
+            }
+            showToast('已创建新对话');
         }
 
+        // ===== 切换对话 =====
         function switchChat(id) {
+            if (id === currentChatId) return;
             currentChatId = id;
             renderChatList();
+            var frame = document.getElementById('chatFrame');
+            if (loadedUrl) {
+                frame.src = '';
+                setTimeout(function() { frame.src = loadedUrl; }, 100);
+            }
+            showToast('已切换对话');
         }
 
+        // ===== 删除对话 =====
         function deleteChat(id) {
-            chatHistory = chatHistory.filter(function(c) { return c.id !== id; });
-            if (currentChatId === id) currentChatId = chatHistory.length > 0 ? chatHistory[0].id : null;
-            saveHistory();
+            var chat = chatHistory.find(function(c) { return c.id === id; });
+            var title = chat ? chat.title : '此对话';
+            showConfirm('删除对话', '确定要删除"' + title + '"吗？此操作不可撤销。', function() {
+                chatHistory = chatHistory.filter(function(c) { return c.id !== id; });
+                if (currentChatId === id) {
+                    currentChatId = chatHistory.length > 0 ? chatHistory[0].id : null;
+                }
+                saveHistory();
+                renderChatList();
+                showToast('已删除对话');
+            });
+        }
+
+        // ===== 重命名对话 =====
+        function startRename(id) {
+            event.stopPropagation();
+            var chat = chatHistory.find(function(c) { return c.id === id; });
+            if (!chat) return;
+            var item = document.querySelector('.chat-item[data-id="' + id + '"] .chat-item-title');
+            if (!item) return;
+            var oldTitle = chat.title;
+            item.innerHTML = '<input class="rename-input" type="text" value="' + escapeHtml(oldTitle) + '">';
+            var input = item.querySelector('input');
+            input.focus();
+            input.select();
+            function finishRename() {
+                var newTitle = input.value.trim() || oldTitle;
+                chat.title = newTitle;
+                saveHistory();
+                renderChatList();
+                if (newTitle !== oldTitle) showToast('已重命名');
+            }
+            input.addEventListener('blur', finishRename);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                if (e.key === 'Escape') { input.value = oldTitle; input.blur(); }
+            });
+        }
+
+        // ===== 批量模式 =====
+        function enterBatchMode() {
+            if (chatHistory.length === 0) { showToast('没有可批量操作的记录'); return; }
+            batchMode = true;
+            selectedChats.clear();
+            updateBatchBar();
             renderChatList();
         }
-
-        function toggleSidebar() {
-            var sidebar = document.getElementById('sidebar');
-            var btn = document.getElementById('toggleBtn');
-            sidebar.classList.toggle('collapsed');
-            btn.classList.toggle('shifted');
-            btn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        function cancelBatchMode() {
+            batchMode = false;
+            selectedChats.clear();
+            updateBatchBar();
+            renderChatList();
+        }
+        function updateBatchBar() {
+            var bar = document.getElementById('batchBar');
+            if (batchMode) {
+                bar.classList.add('show');
+                updateSelectAllCheckbox();
+                document.getElementById('batchCountText').textContent = '已选 ' + selectedChats.size + ' 项';
+            } else {
+                bar.classList.remove('show');
+            }
+        }
+        function toggleSelectChat(id) {
+            if (selectedChats.has(id)) {
+                selectedChats.delete(id);
+            } else {
+                selectedChats.add(id);
+            }
+            updateBatchBar();
+            renderChatList();
+        }
+        function toggleSelectAll() {
+            var visibleIds = getVisibleChatIds();
+            var allSelected = visibleIds.every(function(id) { return selectedChats.has(id); });
+            if (allSelected) {
+                visibleIds.forEach(function(id) { selectedChats.delete(id); });
+            } else {
+                visibleIds.forEach(function(id) { selectedChats.add(id); });
+            }
+            updateBatchBar();
+            renderChatList();
+        }
+        function updateSelectAllCheckbox() {
+            var checkbox = document.getElementById('selectAllCheckbox');
+            var visibleIds = getVisibleChatIds();
+            var allSelected = visibleIds.length > 0 && visibleIds.every(function(id) { return selectedChats.has(id); });
+            var someSelected = visibleIds.some(function(id) { return selectedChats.has(id); });
+            if (allSelected) {
+                checkbox.classList.add('checked');
+                checkbox.classList.remove('unchecked');
+            } else if (someSelected) {
+                checkbox.classList.remove('checked');
+                checkbox.classList.remove('unchecked');
+                checkbox.style.background = 'var(--accent)';
+                checkbox.style.opacity = '0.5';
+            } else {
+                checkbox.classList.remove('checked');
+                checkbox.classList.add('unchecked');
+                checkbox.style.background = '';
+                checkbox.style.opacity = '';
+            }
+        }
+        function getVisibleChatIds() {
+            var keyword = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            var filtered = chatHistory;
+            if (keyword) {
+                filtered = chatHistory.filter(function(c) {
+                    return c.title.toLowerCase().indexOf(keyword) !== -1;
+                });
+            }
+            return filtered.map(function(c) { return c.id; });
+        }
+        function confirmBatchDelete() {
+            if (selectedChats.size === 0) { showToast('请先选择要删除的对话'); return; }
+            showConfirm('批量删除', '确定要删除选中的 ' + selectedChats.size + ' 条对话吗？此操作不可撤销。', function() {
+                chatHistory = chatHistory.filter(function(c) { return !selectedChats.has(c.id); });
+                if (selectedChats.has(currentChatId)) {
+                    currentChatId = chatHistory.length > 0 ? chatHistory[0].id : null;
+                }
+                selectedChats.clear();
+                saveHistory();
+                renderChatList();
+                showToast('已删除 ' + selectedChats.size + ' 条对话');
+                if (chatHistory.length === 0) cancelBatchMode();
+            });
         }
 
+        // ===== 清空全部 =====
+        function confirmClearAll() {
+            if (chatHistory.length === 0) { showToast('没有可清空的记录'); return; }
+            showConfirm('清空全部对话', '确定要删除全部 ' + chatHistory.length + ' 条对话记录吗？此操作不可撤销。', function() {
+                chatHistory = [];
+                currentChatId = null;
+                saveHistory();
+                renderChatList();
+                showToast('已清空全部对话');
+                if (batchMode) cancelBatchMode();
+            });
+        }
+
+        // ===== 侧边栏折叠 =====
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        // ===== 加载嵌入地址 =====
         function loadUrl() {
             var url = document.getElementById('urlInput').value.trim();
             if (!url) return;
-            document.getElementById('inputBar').style.display = 'none';
+            loadedUrl = url;
             document.getElementById('placeholder').style.display = 'none';
             var frame = document.getElementById('chatFrame');
             frame.style.display = 'block';
             frame.src = url;
-            if (!currentChatId) newChat();
+            if (!currentChatId) {
+                var now = new Date();
+                var timeStr = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0') + ' ' +
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
+                var chat = { id: 'chat_' + Date.now(), title: '对话 1', time: timeStr, url: url };
+                chatHistory.unshift(chat);
+                currentChatId = chat.id;
+                saveHistory();
+                renderChatList();
+            }
         }
 
+        // ===== 重置 =====
         function resetUrl() {
             document.getElementById('urlInput').value = '';
+            loadedUrl = '';
             document.getElementById('chatFrame').style.display = 'none';
             document.getElementById('chatFrame').src = '';
             document.getElementById('placeholder').style.display = 'flex';
-            document.getElementById('inputBar').style.display = 'flex';
         }
 
+        // ===== 键盘快捷键 =====
         document.getElementById('urlInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') loadUrl();
         });
 
+        // ===== 初始化 =====
         renderChatList();
     </script>
 </body>
